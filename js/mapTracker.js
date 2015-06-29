@@ -151,8 +151,8 @@ function insertMarker()
 
 function moveCenter(map, latLng) {
   map.setCenter(latLng);
-  document.getElementById("cntr_lat").innerHTML= latLng.lat();
-  document.getElementById("cntr_lng").innerHTML= latLng.lng();
+  document.getElementById("cntr_lat").innerHTML= latLng.lat().toFixed(5);
+  document.getElementById("cntr_lng").innerHTML= latLng.lng().toFixed(6);
   document.getElementById("zoom").innerHTML = map.getZoom().toString();
 };
 
@@ -166,8 +166,8 @@ function loadMap(lat, lng, zoom)
   };
   map = new google.maps.Map(document.getElementById("map"), myOptions);
   var cntr = map.getCenter();
-  document.getElementById("cntr_lat").innerHTML= cntr.lat().toFixed(4).toString();
-  document.getElementById("cntr_lng").innerHTML= cntr.lng().toFixed(5).toString();
+  document.getElementById("cntr_lat").innerHTML= cntr.lat().toFixed(5);
+  document.getElementById("cntr_lng").innerHTML= cntr.lng().toFixed(6);
   document.getElementById("zoom").innerHTML = map.getZoom().toString();
 
   google.maps.event.addListener(map, 'center_changed', function() {

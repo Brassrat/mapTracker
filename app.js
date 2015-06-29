@@ -55,6 +55,9 @@ var net = require('net');
 var http = require('http');
 var io = require('socket.io');
 
+var fs = require('fs');
+var path = require('path');
+
 var app = express();
 
 app.use('/js', express.static(__dirname  + '/js'));
@@ -71,12 +74,12 @@ var showMap = function (req, res, options) {
   var lat = options.lat;
   if (lat == undefined) { lat = 0; }
   //if (lat == 0) { lat =42.402037710905496 ; }
-  if (lat == 0) { lat =42.4109 ; }
+  if (lat == 0) { lat =42.4021 ; }
   if (logLevel >= LOG_INFO) { console.log("lat : " + lat); }
   var lng = options.lng;
   if (lng == undefined) { lng = 0; }
   //if (lng == 0) { lng =-71.23397827148438; }
-  if (lng == 0) { lng =-71.23381; }
+  if (lng == 0) { lng =-71.23411; }
   if (logLevel >= LOG_INFO) { console.log("lng : " + lng); }
   var zoom = options.zoom;
   if (zoom == undefined) { zoom = 0; }
@@ -143,11 +146,23 @@ app.get("/latlng",function (req,res) {
 });
 
 app.get("/gpx/:file", function(req,res) {
-  var lat = 0;
-  var lng = 0;
-  var zoom = 0;
+  var filePath = path.join(__dirname, 'gpx', req.params.file) + '.gpx';
+  if (logLevel >= LOG_DEBUG) { console.log("REQUESTED FILE: " + filePath); }
 
-  showMap(req, res, {} );
+  fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
+    if (!err){
+      if (logLevel >= LOG_DEBUG) { console.log('received data: ' + data); }
+      res.writeHead(200, {'Content-Type': 'text/xml'});
+      res.write(data);
+      res.end();
+    } else {
+      console.log(err);
+      res.writeHead(200, {'Content-Type': 'text/plain'});
+      res.write("Unknown file: " + req.params.file);
+      res.end();
+    }
+
+  });
 });
 
 // route routing is very easy with express, this will handle the request for
