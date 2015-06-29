@@ -1,12 +1,12 @@
 <html>
 <head>
-<title>JGMap 0.003</title>
+<title>MapTracker 0.004</title>
 <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
 <script type="text/javascript" src="/socket.io/socket.io.js"></script>
 <script type="text/javascript" >
 var markerId = 0;
 </script>
-<script type="text/javascript" src="/js/mapExample.js"></script>
+<script type="text/javascript" src="/js/mapTracker.js"></script>
 <script type="text/javascript" >
 var socket = startSocket();
 window.onload= function()
@@ -61,6 +61,13 @@ tbody.scrollContent {
 </style>
 </head>
 <body>
+<table>
+<tr>
+<td>
+<div id="map" style="<%=mapStyle%>"></div>
+</td>
+<td>
+CENTER POINT
 <table id="centerTable">
   <thead>
     <tr>
@@ -78,8 +85,8 @@ tbody.scrollContent {
   </tbody>
 </table>
 &nbsp;
-<div id="map" style="<%=mapStyle%>"></div>
 <div style="<%=listStyle%>">
+MARKED POINTS
 <table id="latLngTable">
   <thead>
     <tr>
@@ -93,5 +100,7 @@ tbody.scrollContent {
   </tbody>
 </table>
 </div>
+</td>
+</tr>
 </body>
 </html>
