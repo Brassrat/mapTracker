@@ -99,7 +99,7 @@ var getDistance = (function() {
         return (d).toFixed(4); // returns the distance in meter
       },
     inFeet: function(p1, p2) {
-      return (3.280839895 * getDistance.inMeters(p1, p2)).toFixed(2);
+      return (3.280839895 * this.inMeters(p1, p2)).toFixed(2);
     }
     };
     })();
@@ -120,40 +120,55 @@ function insertMarker()
   if (tableRef.rows.length <= 0) { startLocation = clickLocation; }
   var newRow = tableRef.insertRow(tableRef.rows.length);
   newRow.marker = addMarker(map, clickLocation);
-  var ii = 0;
-  newRow.insertCell(ii++).appendChild(document.createTextNode(clickLocation.lat().toFixed(4).toString()));
-  newRow.insertCell(ii++).appendChild(document.createTextNode(clickLocation.lng().toFixed(5).toString()));
 
+  var ii = 0;
+  newRow.insertCell(ii++).appendChild(document.createTextNode(clickLocation.lat().toFixed(5)));
+  newRow.insertCell(ii++).appendChild(document.createTextNode(clickLocation.lng().toFixed(6)));
+
+  addDelete(tableRef, newRow, ii++);
+  addDistance(tableRef, newRow, ii++);
+}
+
+function addDistance(tableRef, newRow, col)
+{
+  var prevRow = tableRef.rows.length-2;
+  if (prevRow < 0) { prevRow = 0; }
+  var prevLocation = tableRef.rows[prevRow].marker.position;
+  var dist = document.createTextNode(getDistance.inFeet(prevLocation, clickLocation).toString());
+  var cell = newRow.insertCell(col);
+  var el_span = document.createElement('span');
+  el_span.setAttribute('class', 'numericCell');
+  el_span.appendChild(dist);
+  cell.appendChild(el_span);
+}
+
+function addDelete(tableRef, newRow, col)
+{
   var anchor = document.createElement('a');
   anchor.href='#';
   anchor.innerHTML = 'delete';
   anchor.title = "delete " + clickLocation.toString();
   anchor.row = newRow;
   anchor.setAttribute('onclick', "return rmRow(this)");
-
-  var cell = newRow.insertCell(ii++);
+  var cell = newRow.insertCell(col);
   var el_span = document.createElement('span');
   el_span.setAttribute('class', 'center');
   el_span.appendChild(anchor);
   cell.appendChild(el_span);
+}
 
-  var prevRow = tableRef.rows.length-2;
-  if (prevRow < 0) { prevRow = 0; }
-  var prevLocation = tableRef.rows[prevRow].marker.position;
-  var dist = document.createTextNode(getDistance.inFeet(prevLocation, clickLocation).toString());
 
-  cell = newRow.insertCell(ii++);
-  el_span = document.createElement('span');
-  el_span.setAttribute('class', 'numericCell');
-  el_span.appendChild(dist);
-  cell.appendChild(el_span);
+function showCenter()
+{
+  var latLng = map.getCenter();
+  document.getElementById("cntr_lat").innerHTML= latLng.lat().toFixed(5);
+  document.getElementById("cntr_lng").innerHTML= latLng.lng().toFixed(6);
+  document.getElementById("zoom").innerHTML = map.getZoom().toString();
 }
 
 function moveCenter(map, latLng) {
   map.setCenter(latLng);
-  document.getElementById("cntr_lat").innerHTML= latLng.lat().toFixed(5);
-  document.getElementById("cntr_lng").innerHTML= latLng.lng().toFixed(6);
-  document.getElementById("zoom").innerHTML = map.getZoom().toString();
+  showCenter();
 };
 
 function loadMap(lat, lng, zoom)
@@ -164,16 +179,11 @@ function loadMap(lat, lng, zoom)
     mapTypeId: google.maps.MapTypeId.ROADMAP,
     draggableCursor: 'crosshair'
   };
+
   map = new google.maps.Map(document.getElementById("map"), myOptions);
-  var cntr = map.getCenter();
-  document.getElementById("cntr_lat").innerHTML= cntr.lat().toFixed(5);
-  document.getElementById("cntr_lng").innerHTML= cntr.lng().toFixed(6);
-  document.getElementById("zoom").innerHTML = map.getZoom().toString();
 
   google.maps.event.addListener(map, 'center_changed', function() {
-    var latLng = map.getCenter();
-    document.getElementById("cntr_lat").innerHTML= latLng.lat();
-    document.getElementById("cntr_lng").innerHTML= latLng.lng()
+    showCenter();
   });
 
   google.maps.event.addListener(map, 'zoom_changed', function(evXX) {
@@ -196,5 +206,6 @@ function loadMap(lat, lng, zoom)
     return false;
   });
 
+  showCenter()
 };
 
