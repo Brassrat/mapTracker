@@ -1,0 +1,17 @@
+#!/usr/bin/expect
+set hostname [lindex $argv 0]
+set port [lindex $argv 1]
+set lng [lindex $argv 2]
+set lat [lindex $argv 3]
+if [catch { 
+spawn telnet $hostname $port ;
+
+expect OK
+send "geo fix $lng $lat\r"
+expect OK
+send "exit\r"
+
+ } err ] {
+    puts [ format "Unable to telnet to %s:%s" $hostname $port ]
+    exit 1
+}

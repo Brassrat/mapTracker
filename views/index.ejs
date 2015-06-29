@@ -1,0 +1,97 @@
+<html>
+<head>
+<title>JGMap 0.003</title>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" >
+var markerId = 0;
+</script>
+<script type="text/javascript" src="/js/mapExample.js"></script>
+<script type="text/javascript" >
+var socket = startSocket();
+window.onload= function()
+{
+  loadMap(<%=lat%>, <%=lng%>, <%=zoom%>);
+};
+</script>
+<style>
+table
+{
+  border:1px solid black;
+  border-collapse:collapse;
+}
+th
+{
+  color:black;
+  border:1px solid black;
+  padding: 2px;
+}
+td
+{
+  border:1px solid black;
+  padding: 2px;
+}
+td a {
+  display:block;
+  width:100%;
+  padding: 2px;
+}
+td.zoom {
+  color: red;
+  text-align: center;
+  padding: 2px;
+}
+td.center {
+  color: blue;
+  text-align: center;
+}
+.center {
+  color: blue;
+  text-align: center;
+}
+.numericCell {
+  color: dodgerblue;
+  text-align: right;
+  float: right;
+}
+tbody.scrollContent {
+	overflow: auto;
+	width: 100%
+}
+</style>
+</head>
+<body>
+<table id="centerTable">
+  <thead>
+    <tr>
+      <th>LAT</th>
+      <th>LNG</th>
+      <th>ZOOM</th>
+    </tr>
+  </thead>
+  <tbody id="center">
+  <tr>
+    <td class="center" id="cntr_lat"> </td>
+    <td class="center" id="cntr_lng"> </td>
+    <td class="zoom" id="zoom"> </td>
+  </tr>
+  </tbody>
+</table>
+&nbsp;
+<div id="map" style="<%=mapStyle%>"></div>
+<div style="<%=listStyle%>">
+<table id="latLngTable">
+  <thead>
+    <tr>
+      <th>LAT</th>
+      <th>LNG</th>
+      <th>DELETE</th>
+      <th>DISTANCE</th>
+    </tr>
+  </thead>
+  <tbody id="list">
+  </tbody>
+</table>
+</div>
+</body>
+</html>
