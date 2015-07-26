@@ -17,6 +17,7 @@ var ops = stdio.getopt({
   'map': {key: 'm', args: 2, description: 'width and height of map (1000x800)'},
     'telnetHost': {key: 't', args: 1, description: 'host emulator is running on'},
     'telnetPort': {key: 'p', args: 1, description: 'port emulator is reading geo commands'},
+    'trace': {key: 'X', description: 'enable trace level logging'},
     'debug': {key: 'd', description: 'enable debug level logging'},
     'warn': {key: 'w', description: 'enable warning level logging'},
     'info': {key: 'i', description: 'enable info level logging'},
@@ -36,6 +37,9 @@ if (ops.info) {
 if (ops.debug) {
   logLevel = LOG_DEBUG;
 }
+if (ops.trace) {
+  logLevel = LOG_TRACE;
+}
 if (ops.map) {
   defaultMapWidth = ops.map[0];
   defaultMapHeight = ops.map[1];
@@ -53,7 +57,7 @@ var geohash = require('geohash').GeoHash;
 
 var net = require('net');
 var http = require('http');
-var io = require('socket.io');
+var io = require('socket.io')(http);
 
 var fs = require('fs');
 var path = require('path');
@@ -141,12 +145,8 @@ app.get("/latlng",function (req,res) {
   showFromUrl(req, res);
 });
 
-app.get("/latlng",function (req,res) {
-  showFromUrl(req, res);
-});
-
 app.get("/gpx/:file", function(req,res) {
-  var filePath = path.join(__dirname, 'gpx', req.params.file) + '.gpx';
+  var filePath = path.join(__dirname, 'gpx', req.params.file.replace(/\.gpx$/,"")) + '.gpx';
   if (logLevel >= LOG_DEBUG) { console.log("REQUESTED FILE: " + filePath); }
 
   fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
@@ -219,6 +219,7 @@ io = io(server);
 var pts = {};
 function sendGeo(key)
 {
+  if (logLevel >= LOG_INFO) { console.log("sendGeo " + key) }
   if (emulatorSocket == null) {
     var cmd = "geofix " + telnetHost + ' ' + telnetPort + ' ' + key;
     if (logLevel >= LOG_INFO) { console.log("exec: " + cmd); }

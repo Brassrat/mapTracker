@@ -8,7 +8,8 @@ var markerId = 0;
 </script>
 <script type="text/javascript" src="/js/mapTracker.js"></script>
 <script type="text/javascript" >
-var socket = startSocket();
+//var socket = startSocket();
+var socket = io();
 window.onload= function()
 {
   loadMap(<%=lat%>, <%=lng%>, <%=zoom%>);
