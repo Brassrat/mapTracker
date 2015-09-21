@@ -57,7 +57,6 @@ var geohash = require('geohash').GeoHash;
 
 var net = require('net');
 var http = require('http');
-var io = require('socket.io')(http);
 
 var fs = require('fs');
 var path = require('path');
@@ -145,8 +144,8 @@ app.get("/latlng",function (req,res) {
   showFromUrl(req, res);
 });
 
-app.get("/gpx/:file", function(req,res) {
-  var filePath = path.join(__dirname, 'gpx', req.params.file.replace(/\.gpx$/,"")) + '.gpx';
+function returnFile(req, res, filePath)
+{
   if (logLevel >= LOG_DEBUG) { console.log("REQUESTED FILE: " + filePath); }
 
   fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
@@ -163,6 +162,16 @@ app.get("/gpx/:file", function(req,res) {
     }
 
   });
+}
+
+app.get("/gpx/:file", function(req,res) {
+  var filePath = path.join(__dirname, 'gpx', req.params.file.replace(/\.gpx$/,"")) + '.gpx';
+  returnFile(req, res, filePath)
+});
+
+app.get("/kml/:file", function(req,res) {
+  var filePath = path.join(__dirname, 'kml', req.params.file.replace(/\.kml$/,"")) + '.kml';
+  returnFile(req, res, filePath)
 });
 
 // route routing is very easy with express, this will handle the request for
@@ -214,7 +223,7 @@ emulator.on('connection', function(socket) {
 //var sys = require('sys');
 var exec = require('child_process').exec;
 var server = http.createServer(app).listen(9999);
-io = io(server);
+var io = require('socket.io')(server);
 //io.set('log level', logLevel); // info
 var pts = {};
 function sendGeo(key)
