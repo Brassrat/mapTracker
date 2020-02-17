@@ -1,4 +1,4 @@
-
+#! /usr/bin/env node
 var defaultMapHeight = 800;
 var defaultMapWidth = 1000;
 var LOG_ERROR = 1; 
@@ -14,14 +14,13 @@ var mockLocationServicePort = 0;
 
 var stdio = require('stdio');
 var ops = stdio.getopt({
-  'map': {key: 'm', args: 2, description: 'width and height of map (1000x800)'},
-    'telnetHost': {key: 't', args: 1, description: 'host emulator is running on'},
-    'telnetPort': {key: 'p', args: 1, description: 'port emulator is reading geo commands'},
-    'trace': {key: 'X', description: 'enable trace level logging'},
-    'debug': {key: 'd', description: 'enable debug level logging'},
-    'warn': {key: 'w', description: 'enable warning level logging'},
-    'info': {key: 'i', description: 'enable info level logging'},
-    'hlp': {key: 'h', description: 'show usage description'},
+  'map': {key: 'm', args: 2, required: false, description: 'width and height of map (1000x800)', default: [0,0]},
+    'telnetHost': {key: 't', required: false, args: 1, description: 'host emulator is running on', default: ''},
+    'telnetPort': {key: 'p', required: false, args: 1, description: 'port emulator is reading geo commands', default: ''},
+    'trace': {key: 'X', required: false, description: 'enable trace level logging', default: false},
+    'debug': {key: 'd', required: false, description: 'enable debug level logging', default: false},
+    'warn': {key: 'w', required: false, description: 'enable warning level logging', default: false},
+    'info': {key: 'i', required: false, description: 'enable info level logging', default: false},
 });
 
 if (ops.help) {

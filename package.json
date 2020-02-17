@@ -1,0 +1,22 @@
+{
+  "name": "MapTracker",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node MapTrackerApp.js"
+  },
+  "dependencies": {
+    "bufferutil": "^4.0.1",
+    "ejs": "*",
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "geohash": "0.0.1",
+    "http": "0.0.0",
+    "net": "^1.0.2",
+    "path": "^0.12.7",
+    "socket.io": "^2.3.0",
+    "stdio": "^2.0.1",
+    "sys": "0.0.1",
+    "utf-8-validate": "^5.0.2"
+  }
+}
