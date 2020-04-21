@@ -1,107 +1,125 @@
 <html>
-  <head>
+<head>
     <title>MapTracker 0.005</title>
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=true&key=AIzaSyC8qqIBY2RmPNwZvDIh0mSTsyNY63KLeI8"></script>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
     <script type="text/javascript" src="/socket.io/socket.io.js"></script>
-    <script type="text/javascript" >
-var markerId = 0;
+    <script type="text/javascript">
+      var markerId = 0;
+      var socket = io();
+      var mapLoadOptions = { lat: <%= lat %>, lng: <%= lng %>, zoom: <%= zoom %>};
     </script>
     <script type="text/javascript" src="/js/mapTracker.js"></script>
-    <script type="text/javascript" >
-//var socket = startSocket();
-var socket = io();
-window.onload= function()
-{
-  loadMap(<%=lat%>, <%=lng%>, <%=zoom%>);
-};
-    </script>
     <style>
-table
-{
-  border:1px solid black;
-  border-collapse:collapse;
-}
-th
-{
-  color:black;
-  border:1px solid black;
-  padding: 2px;
-}
-td
-{
-  border:1px solid black;
-  padding: 2px;
-}
-td a {
-  display:block;
-  width:100%;
-  padding: 2px;
-}
-td.zoom {
-  color: red;
-  text-align: center;
-  padding: 2px;
-}
-td.center {
-  color: blue;
-  text-align: center;
-}
-.center {
-  color: blue;
-  text-align: center;
-}
-.numericCell {
-  color: dodgerblue;
-  text-align: right;
-  float: right;
-}
-tbody.scrollContent {
-  overflow: auto;
-  width: 100%
-}
+        table {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th {
+            color: black;
+            border: 1px solid black;
+            padding: 2px;
+        }
+
+        td {
+            border: 1px solid black;
+            padding: 2px;
+        }
+
+        td a {
+            display: block;
+            width: 100%;
+            padding: 2px;
+        }
+
+        td.zoom {
+            color: red;
+            text-align: center;
+            padding: 2px;
+        }
+
+        td.center {
+            color: blue;
+            text-align: center;
+        }
+
+        .center {
+            color: blue;
+            text-align: center;
+        }
+
+        .numericCell {
+            color: dodgerblue;
+            text-align: right;
+            float: right;
+        }
+
+        tbody.scrollContent {
+            overflow: auto;
+            width: 100%
+        }
     </style>
-  </head>
-  <body>
-    <table>
-      <tr>
-        <td>
-          <div id="map" style="<%=mapStyle%>"></div>
+</head>
+<body onkeydown="keyEventDn" onkeyup="keyEventUp">
+<table>
+    <tr>
+        <td width="<%= mapWidth %>" height="<%= mapHeight %>">
+            <div id="map" style="height:100%; width:100%;"></div>
         </td>
         <td>
-          CENTER POINT
-          <table id="centerTable">
-            <thead>
-              <tr>
-                <th>LAT</th>
-                <th>LNG</th>
-                <th>ZOOM</th>
-              </tr>
-            </thead>
-            <tbody id="center">
-              <tr>
-                <td class="center" id="cntr_lat"> </td>
-                <td class="center" id="cntr_lng"> </td>
-                <td class="zoom" id="zoom"> </td>
-              </tr>
-            </tbody>
-          </table>
-          &nbsp;
-          <div style="<%=listStyle%>">
-            MARKED POINTS
-            <table id="latLngTable">
-              <thead>
+            CENTER POINT
+            <table id="centerTable">
+                <thead>
                 <tr>
-                  <th>LAT</th>
-                  <th>LNG</th>
-                  <th>DELETE</th>
-                  <th>DISTANCE</th>
+                    <th>LAT</th>
+                    <th>LNG</th>
+                    <th>ZOOM</th>
                 </tr>
-              </thead>
-              <tbody id="list">
-              </tbody>
+                </thead>
+                <tbody id="center">
+                <tr>
+                    <td class="center" id="cntr_lat"></td>
+                    <td class="center" id="cntr_lng"></td>
+                    <td class="zoom" id="zoom"></td>
+                </tr>
+                </tbody>
             </table>
-          </div>
+            &nbsp;
+            <div style="<%= listStyle %>">
+                MARKED POINTS
+                <table id="latLngTable">
+                    <thead>
+                    <tr>
+                        <th>LAT</th>
+                        <th>LNG</th>
+                        <th>LEG</th>
+                        <th>DIST</th>
+                        <th>DEL</th>
+                    </tr>
+                    </thead>
+                    <tbody id="list">
+                    </tbody>
+                </table>
+            </div>
+            <div style="<%= listStyle %>">
+                TARGET POINTS
+                <table id="targetTable">
+                    <thead>
+                    <tr>
+                        <th>LAT</th>
+                        <th>LNG</th>
+                        <th>DEL</th>
+                    </tr>
+                    </thead>
+                    <tbody id="targets">
+                    </tbody>
+                </table>
+            </div>
         </td>
-      </tr>
-  </body>
+    </tr>
+</table>
+<script src="https://maps.googleapis.com/maps/api/js?key=<%=key%>&callback=initTheMap"
+        async defer></script>
+</body>
 </html>

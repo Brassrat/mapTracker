@@ -1,10 +1,8 @@
-
-function startSocket()
-{
-  var socket = io.connect("/");
+function startSocket () {
+  const socket = io.connect('/');
 
   /*Initializing the connection with the server via websockets */
-  socket.on("message",function(message){
+  socket.on('message', function (message) {
     /*
        When server sends data to the client it will trigger
        "message" event on the client side , by
@@ -13,18 +11,18 @@ function startSocket()
        be executed . The Callback function gets the data sent
        from the server
        */
-    console.log("Message from the server arrived: " + message)
+    console.log('Message from the server arrived: ' + message);
     message = JSON.parse(message);
   });
   return socket;
 }
 
-function sendLatLng(lat, lng)
-{
+function sendLatLng (lat, lng, isTarget = false) {
   // create a JS object
   var data = {
     lat: lat,
-    lng: lng
+    lng: lng,
+    target: isTarget
   };
   // send JSON string form of object to server
   socket.send(JSON.stringify(data));
@@ -32,45 +30,54 @@ function sendLatLng(lat, lng)
      and the event handler obtains the data sent */
 }
 
-function addMarker(map, latLng)
-{
+function addMarker (map, latLng, isTarget) {
   markerId += 1;
   //animation: google.maps.Animation.DROP,
+  let color = isTarget ? 'red' : 'blue';
   var marker = new google.maps.Marker({
     id: markerId,
-      position: latLng,
-      map: map,
-      title:latLng.toString()
+    position: latLng,
+    map: map,
+    title: latLng.toString(),
+    label: isTarget ? "T" : "P",
+    icon: {
+      url: `http://maps.google.com/mapfiles/ms/icons/${color}-dot.png`
+    }
   });
-  sendLatLng(latLng.lat(), latLng.lng());
+  sendLatLng(latLng.lat, latLng.lng, isTarget);
   return marker;
-};
+}
 
-function removeMarker(marker)
-{
+function removeMarker (marker) {
   //alert("delete marker: " + marker.toString());
   marker.setMap(null);
   return null;
-};
+}
 
-function rmRow(anchor)
-{
+function rmRow (tbl, anchor) {
   //alert("rmRow: " + anchor.title);
-  if (anchor.row != null)
-  {
-    if (anchor.row.marker != null)
-    {
-      marker = anchor.row.marker;
+  if (anchor.row != null) {
+    if (anchor.row.marker != null) {
+      let marker = anchor.row.marker;
       removeMarker(marker);
-      var rows = document.getElementById('latLngTable').getElementsByTagName('tbody')[0];
-      for (ii = 0; ii < rows.children.length; ++ii)
-      {
-        var tr = rows.children[ii];
-        if (typeof(tr.marker) != 'undefined')
-        {
-          if (tr.marker == marker)
-          {
+      const rows = document.getElementById(tbl).getElementsByTagName('tbody')[0];
+      const locs = (tbl === 'targetTable') ? targets : points;
+      for (ii = 0; ii < rows.children.length; ++ii) {
+        const tr = rows.children[ii];
+        if (typeof (tr.marker) != 'undefined') {
+          if (tr.marker === marker) {
             rows.deleteRow(ii);
+            locs.splice(ii, 1);
+            // have to update dist and totDist for all following points
+            for (jj = ii; jj < locs.length; ++jj) {
+              let tot = (jj <= 0) ? 0 : locs[jj-1].totDist;
+              locs[jj].dist = (jj <= 0) ? 0 : getDistance.betweenFeet(locs[jj-1], locs[jj]);
+              locs[jj].totDist = tot + locs[jj].dist;
+              // have to update ui
+
+              setDistance(rows.children[jj], 2, Math.round(locs[jj].dist * 100) / 100);
+              setDistance(rows.children[jj], 3, Math.round((locs[jj].totDist * 100) / 5280) / 100);
+            }
             break;
           }
         }
@@ -78,134 +85,196 @@ function rmRow(anchor)
     }
   }
   return false;
-};
+}
 
-var rad = function(x) {
+var rad = function (x) {
   return x * Math.PI / 180;
 };
 
-var getDistance = (function() {
-    return {
-      inMeters: function(p1, p2) {
-        var R = 6378137; // Earth’s mean radius in meter
-        var dLat = rad(p2.lat() - p1.lat());
-        var dLong = rad(p2.lng() - p1.lng());
-        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(rad(p1.lat())) * Math.cos(rad(p2.lat())) *
-                Math.sin(dLong / 2) * Math.sin(dLong / 2);
-        //  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        var c = 2 * Math.asin(Math.sqrt(a));
-        var d = R * c;
-        return (d).toFixed(4); // returns the distance in meter
-      },
-    inFeet: function(p1, p2) {
-      return (3.280839895 * this.inMeters(p1, p2)).toFixed(2);
-    }
-    };
-    })();
+var getDistance = (function () {
+  return {
+    between: function (p1, p2) {
+      var R = 6378137; // Earth’s mean radius in meter
+      var dLat = rad(p2.lat - p1.lat);
+      var dLong = rad(p2.lng - p1.lng);
+      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(rad(p1.lat)) * Math.cos(rad(p2.lat)) *
+          Math.sin(dLong / 2) * Math.sin(dLong / 2);
+      //  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      var c = 2 * Math.asin(Math.sqrt(a));
+      var d = R * c;
+      return (d); // returns the distance in meter
+    },
+    betweenFeet: function (p1, p2) {
+      return (3.280839895 * this.between(p1, p2));
+    },
+    betweenMile: function (p1, p2) {
+      return (this.betweenFeet(p1, p2) / 5280);
+    },
+    inMeters: function (p1, p2) {
+      return this.between(p1, p2).toFixed(4); // returns the distance in meter
+    },
+    inFeet: function (p1, p2) {
+      return this.betweenFeet(p1, p2).toFixed(2);
+    },
+  };
+})();
 
-var map = null;
+var theMap = null;
 var updateTimeout = null;
 var startLocation = null;
-var clickLocation = null;
-var clickZoom = null;
 
-function insertMarker()
-{
-  // Insert a row in the table at the last row
+let points = [];
+let targets = [];
+let ctrldn = false;
+let shiftdn = false;
+let altdn = false;
 
-  //var lst = document.getElementById("list");
-  var tableRef = document.getElementById('latLngTable').getElementsByTagName('tbody')[0];
-
-  if (tableRef.rows.length <= 0) { startLocation = clickLocation; }
-  var newRow = tableRef.insertRow(tableRef.rows.length);
-  newRow.marker = addMarker(map, clickLocation);
-
-  var ii = 0;
-  newRow.insertCell(ii++).appendChild(document.createTextNode(clickLocation.lat().toFixed(5)));
-  newRow.insertCell(ii++).appendChild(document.createTextNode(clickLocation.lng().toFixed(6)));
-
-  addDelete(tableRef, newRow, ii++);
-  addDistance(tableRef, newRow, ii++);
+function keyEventDn(event) {
+  switch(event.which) {
+    case 16:
+      shiftdn = true;
+      break;
+    case 17:
+      ctrldn = true;
+      break;
+  }
 }
 
-function addDistance(tableRef, newRow, col)
-{
-  var prevRow = tableRef.rows.length-2;
-  if (prevRow < 0) { prevRow = 0; }
-  var prevLocation = tableRef.rows[prevRow].marker.position;
-  var dist = document.createTextNode(getDistance.inFeet(prevLocation, clickLocation).toString());
-  var cell = newRow.insertCell(col);
-  var el_span = document.createElement('span');
+function keyEventUp(event) {
+  switch(event.which) {
+    case 16:
+      shiftdn = false;
+      break;
+    case 17:
+      ctrldn = false;
+      break;
+  }
+}
+
+/**
+ * Add marker to map and Insert a row in the table at the last row
+ * @param event
+ */
+function insertMarker (event) {
+  if (ctrldn || altdn) {
+    return; // ignore ctrl clicks for now
+  }
+  // let clickZoom = theMap.getZoom());
+  const tbl = shiftdn ? 'targetTable' : 'latLngTable';
+  const locs = shiftdn ? targets : points;
+
+  const clickLocation = event.latLng;
+  const tableRef = document.getElementById(tbl).getElementsByTagName('tbody')[0];
+  if (tableRef.rows.length <= 0) { startLocation = clickLocation; }
+
+  let lat = clickLocation.lat();
+  let lng = clickLocation.lng();
+  let curLocation = { lat, lng };
+  let dist = 0;
+  let totDist = 0;
+  if (locs.length > 0) {
+    let prevPt = locs.length - 1;
+    let prevLocation = locs[prevPt];
+    dist = Math.round(getDistance.betweenFeet(prevLocation, curLocation) * 100)/100;
+    totDist = locs[prevPt].totDist + dist;
+  }
+  locs.push({ lat, lng, dist, totDist });
+
+  const newRow = tableRef.insertRow(tableRef.rows.length);
+  // locs.length === tableRef.rows.length
+  let ii = 0;
+  newRow.insertCell(ii++).appendChild(document.createTextNode(lat.toFixed(5)));
+  newRow.insertCell(ii++).appendChild(document.createTextNode(lng.toFixed(6)));
+  if (locs === points) {
+    addDistance(newRow, ii++, Math.round(dist * 100) / 100);
+    addDistance(newRow, ii++, Math.round((totDist * 100) / 5280) / 100);
+  }
+  addDelete(tbl, newRow, ii++, clickLocation);
+
+  newRow.marker = addMarker(theMap, clickLocation, shiftdn);
+}
+
+function setDistance(row, col, vv) {
+  row.cells[col].children[0].textContent = vv.toString();
+}
+
+function addDistance (newRow, col, vv) {
+  const cell = newRow.insertCell(col);
+  const el_span = document.createElement('span');
   el_span.setAttribute('class', 'numericCell');
-  el_span.appendChild(dist);
+  el_span.appendChild(document.createTextNode(vv.toString()));
   cell.appendChild(el_span);
 }
 
-function addDelete(tableRef, newRow, col)
-{
-  var anchor = document.createElement('a');
-  anchor.href='#';
-  anchor.innerHTML = 'delete';
-  anchor.title = "delete " + clickLocation.toString();
+function addDelete (tbl, newRow, col, clickLocation) {
+  const anchor = document.createElement('a');
+  anchor.href = '#';
+  anchor.innerHTML = 'del'; // TODO - use image
+  anchor.title = 'delete ' + clickLocation.toString();
   anchor.row = newRow;
-  anchor.setAttribute('onclick', "return rmRow(this)");
-  var cell = newRow.insertCell(col);
-  var el_span = document.createElement('span');
+  anchor.setAttribute('onclick', `return rmRow("${tbl}", this)`);
+  const cell = newRow.insertCell(col);
+  const el_span = document.createElement('span');
   el_span.setAttribute('class', 'center');
   el_span.appendChild(anchor);
   cell.appendChild(el_span);
 }
 
-
-function showCenter()
-{
-  var latLng = map.getCenter();
-  document.getElementById("cntr_lat").innerHTML= latLng.lat().toFixed(5);
-  document.getElementById("cntr_lng").innerHTML= latLng.lng().toFixed(6);
-  document.getElementById("zoom").innerHTML = map.getZoom().toString();
+function showCenter () {
+  const latLng = theMap.getCenter();
+  document.getElementById('cntr_lat').innerHTML = latLng.lat().toFixed(5);
+  document.getElementById('cntr_lng').innerHTML = latLng.lng().toFixed(6);
+  document.getElementById('zoom').innerHTML = theMap.getZoom().toString();
 }
 
-function moveCenter(map, latLng) {
+function moveCenter (map, latLng) {
   map.setCenter(latLng);
   showCenter();
-};
+}
 
-function loadMap(lat, lng, zoom)
-{
-  var myOptions = {
-    center: new google.maps.LatLng(lat, lng), 
+function initTheMap () {
+  let { lat, lng, zoom } = mapLoadOptions;
+  loadTheMap(lat, lng, zoom);
+}
+
+function loadTheMap (lat, lng, zoom) {
+  const myOptions = {
+    center: { lat, lng },
     zoom: zoom,
     mapTypeId: google.maps.MapTypeId.ROADMAP,
-    draggableCursor: 'crosshair'
+    draggableCursor: 'crosshair',
   };
 
-  map = new google.maps.Map(document.getElementById("map"), myOptions);
+  theMap = new google.maps.Map(document.getElementById('map'), myOptions);
+//<body onkeydown="keyEventDn" onkeyup="keyEventUp">
+  let bdy = document.getElementsByTagName('body');
+  bdy[0].addEventListener('keydown', keyEventDn)
+  bdy[0].addEventListener('keyup', keyEventUp)
 
-  google.maps.event.addListener(map, 'center_changed', function() {
+  google.maps.event.addListener(theMap, 'center_changed', function () {
     showCenter();
   });
 
-  google.maps.event.addListener(map, 'zoom_changed', function(evXX) {
-    document.getElementById("zoom").innerHTML = map.getZoom().toString();
+  google.maps.event.addListener(theMap, 'zoom_changed', function (evXX) {
+    document.getElementById('zoom').innerHTML = theMap.getZoom().toString();
   });
 
-  google.maps.event.addListener(map, 'click', function(event) {
-    clickLocation = event.latLng;
-    clickZoom = map.getZoom();
-    updateTimeout = setTimeout("insertMarker();", 400);
+  google.maps.event.addListener(theMap, 'click', function (event) {
+    // delay a little to handle 'slow' double click ...
+      updateTimeout = setTimeout(insertMarker, 400, event);
     return false;
   });
 
-  google.maps.event.addListener(map, 'dblclick', function(event) {
+  google.maps.event.addListener(theMap, 'dblclick', function (event) {
     clearTimeout(updateTimeout);
   });
 
-  google.maps.event.addListener(map, 'rightclick', function(event) {
-    moveCenter(map, event.latLng);
+  google.maps.event.addListener(theMap, 'rightclick', function (event) {
+    moveCenter(theMap, event.latLng);
     return false;
   });
 
-  showCenter()
-};
+  showCenter();
+}
 
