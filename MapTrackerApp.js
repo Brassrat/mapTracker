@@ -14,13 +14,13 @@ var mockLocationServicePort = 0;
 
 const stdio = require('stdio');
 const ops = stdio.getopt({
-  'map': {key: 'm', args: 2, description: 'width and height of map (1000x800)', default: [0,0]},
-    'telnetHost': {key: 't', args: 1, description: 'host emulator is running on', default: ''},
-    'telnetPort': {key: 'p', args: 1, description: 'port emulator is reading geo commands', default: ''},
-    'trace': {key: 'X', description: 'enable trace level logging', default: false},
-    'debug': {key: 'd', description: 'enable debug level logging', default: false},
-    'warn': {key: 'w', description: 'enable warning level logging', default: false},
-    'info': {key: 'i', description: 'enable info level logging', default: false},
+  'map': { key: 'm', args: 2, description: 'width and height of map (1000x800)', default: [0, 0] },
+  'telnetHost': { key: 't', args: 1, description: 'host emulator is running on', default: '' },
+  'telnetPort': { key: 'p', args: 1, description: 'port emulator is reading geo commands', default: '' },
+  'trace': { key: 'X', description: 'enable trace level logging', default: false },
+  'debug': { key: 'd', description: 'enable debug level logging', default: false },
+  'warn': { key: 'w', description: 'enable warning level logging', default: false },
+  'info': { key: 'i', description: 'enable info level logging', default: false },
 });
 
 if (ops.help) {
@@ -62,7 +62,7 @@ const path = require('path');
 
 const app = express();
 
-app.use('/js', express.static(__dirname  + '/js'));
+app.use('/js', express.static(__dirname + '/js'));
 /*
    app.get("/js/:file", function(req,res)
    {
@@ -73,106 +73,113 @@ app.use('/js', express.static(__dirname  + '/js'));
    */
 
 const showMap = function (req, res, options) {
-  let { lat, lng, zoom, mapWidth, mapHeight} = options;
-  if (lat == undefined) { lat = 0; }
+  let { lat, lng, zoom, mapWidth, mapHeight } = options;
+  if (lat === undefined) { lat = 0; }
   //if (lat == 0) { lat =42.402037710905496 ; }
-  if (lat == 0) { lat =42.4021 ; }
-  if (logLevel >= LOG_INFO) { console.log("lat : " + lat); }
-  if (lng == undefined) { lng = 0; }
+  if (lat === 0) { lat = 42.4021; }
+  if (logLevel >= LOG_INFO) { console.log('lat : ' + lat); }
+  if (lng === undefined) { lng = 0; }
   //if (lng == 0) { lng =-71.23397827148438; }
-  if (lng == 0) { lng =-71.23411; }
-  if (logLevel >= LOG_INFO) { console.log("lng : " + lng); }
-  if (zoom == undefined) { zoom = 0; }
-  if (zoom == 0) { zoom = 8; }
-  if (logLevel >= LOG_INFO) { console.log("zoom : " + zoom); }
-  if (mapWidth == undefined) { mapWidth = 0; }
-  if (mapWidth == 0) { mapWidth = defaultMapWidth; }
-  if (logLevel >= LOG_INFO) { console.log("mapWidth : " + mapWidth); }
-  if (mapHeight == undefined) { mapHeight = 0; }
-  if (mapHeight == 0) { mapHeight = defaultMapHeight; }
-  if (logLevel >= LOG_INFO) { console.log("mapHeight : " + mapHeight); }
+  if (lng === 0) { lng = -71.23411; }
+  if (logLevel >= LOG_INFO) { console.log('lng : ' + lng); }
+  if (zoom === undefined) { zoom = 0; }
+  if (zoom === 0) { zoom = 12; }
+  if (logLevel >= LOG_INFO) { console.log('zoom : ' + zoom); }
+  if (mapWidth === undefined) { mapWidth = 0; }
+  if (mapWidth === 0) { mapWidth = defaultMapWidth; }
+  if (logLevel >= LOG_INFO) { console.log('mapWidth : ' + mapWidth); }
+  if (mapHeight === undefined) { mapHeight = 0; }
+  if (mapHeight === 0) { mapHeight = defaultMapHeight; }
+  if (logLevel >= LOG_INFO) { console.log('mapHeight : ' + mapHeight); }
   // now we use the templating capabilities of express and call our template
   // to render the view, and pass a few parameters to it
-  render(req, res, { lat, lng, zoom, mapWidth, mapHeight} );
+  render(req, res, { lat, lng, zoom, mapWidth, mapHeight });
 };
 
-const showFromUrl = function(req, res) {
-  if (logLevel >= LOG_INFO) { console.log("using url params ..."); }
+const showFromUrl = function (req, res) {
+  if (logLevel >= LOG_INFO) { console.log('using url params ...'); }
   const lat = req.query.lat;
   const lng = req.query.lng;
   const zoom = req.query.zoom;
   const mapWidth = req.query.width;
   const mapHeight = req.query.height;
-  showMap(req, res, { lat:lat, lng:lng, zoom:zoom, mapWidth:mapWidth, mapHeight:mapHeight});
-}
+  showMap(req, res, { lat: lat, lng: lng, zoom: zoom, mapWidth: mapWidth, mapHeight: mapHeight });
+};
 
-function render(req, res, info) {
+function render (req, res, info) {
   // now we use the templating capabilities of express and call our template
   // to render the view, and pass a few parameters to it
-  let { lat, lng, zoom, mapWidth, mapHeight} = info;
-  const listHeight = mapHeight/2;
+  let { lat, lng, zoom, mapWidth, mapHeight } = info;
+  let listHeight = mapHeight / 2;
   if (listHeight < 200) { listHeight = 200; }
   let ww = (mapWidth - 20);
   if (ww < 300) { ww = 300; }
-  ww=300;
-  let listStyle= 'width:'+ ww + "px;height:" + listHeight + "px;overflow:auto;";
-  if (logLevel >= LOG_DEBUG) { console.log("rendering...") }
-  let key = require('./ttt.json').key;
-  res.render("index.ejs", { layout: false, key, lat, lng, zoom, mapWidth, mapHeight, listStyle});
+  ww = 300;
+  let listStyle = 'width:' + ww + 'px;height:' + listHeight + 'px;overflow:auto;';
+  if (logLevel >= LOG_DEBUG) { console.log('rendering...'); }
+
+  let keyPath=path.join(process.env['HOME'], '.ssh', 'ttt.json');
+  let key = require(keyPath).key;
+  res.render('index.ejs', { layout: false, key, lat, lng, zoom, mapWidth, mapHeight, listStyle });
 }
 
 // route routing is very easy with express, this will handle the request for
 // geo :id is used here to pattern match with the first value after the
 // forward slash.
-app.get("/geo/:id",function (req,res) {
+app.get('/geo/:id', function (req, res) {
   var zzz = req.params.id;
-  if (logLevel >= LOG_DEBUG) { console.log("decoding geohash: " + zzz); }
+  if (logLevel >= LOG_DEBUG) { console.log('decoding geohash: ' + zzz); }
   //decode the geohash with geohash module
   var latlng = geohash.decodeGeoHash(zzz);
-  if (logLevel >= LOG_INFO) { console.log("latlng : " + latlng); }
+  if (logLevel >= LOG_INFO) { console.log('latlng : ' + latlng); }
   var lat = latlng.latitude[2];
-  if (logLevel >= LOG_DEBUG) { console.log("lat : " + lat); }
+  if (logLevel >= LOG_DEBUG) { console.log('lat : ' + lat); }
   var lng = latlng.longitude[2];
-  if (logLevel >= LOG_DEBUG) { console.log("lng : " + lng); }
+  if (logLevel >= LOG_DEBUG) { console.log('lng : ' + lng); }
   var zoom = zzz.length + 2;
-  if (logLevel >= LOG_DEBUG) { console.log("zoom : " + zoom); }
+  if (logLevel >= LOG_DEBUG) { console.log('zoom : ' + zoom); }
   var mapWidth = req.query.mapWidth;
   var mapHeight = req.query.mapHeight;
-  showMap(req, res, { lat:lat, lng:lng, zoom:zoom } );
+  showMap(req, res, { lat: lat, lng: lng, zoom: zoom });
 });
 
-app.get("/latlng",function (req,res) {
+app.get('/latlng', function (req, res) {
   showFromUrl(req, res);
 });
 
-function returnFile(req, res, filePath)
-{
-  if (logLevel >= LOG_DEBUG) { console.log("REQUESTED FILE: " + filePath); }
+function returnFile (req, res, filePath) {
+  if (logLevel >= LOG_DEBUG) { console.log('REQUESTED FILE: ' + filePath); }
 
-  fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
-    if (!err){
+  fs.readFile(filePath, { encoding: 'utf-8' }, function (err, data) {
+    if (!err) {
       if (logLevel >= LOG_DEBUG) { console.log('received data: ' + data); }
-      res.writeHead(200, {'Content-Type': 'text/xml'});
+      res.writeHead(200, { 'Content-Type': 'text/xml' });
       res.write(data);
       res.end();
-    } else {
+    }
+    else {
       console.log(err);
-      res.writeHead(200, {'Content-Type': 'text/plain'});
-      res.write("Unknown file: " + req.params.file);
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.write('Unknown file: ' + req.params.file);
       res.end();
     }
 
   });
 }
 
-app.get("/gpx/:file", function(req,res) {
-  var filePath = path.join(__dirname, 'gpx', req.params.file.replace(/\.gpx$/,"")) + '.gpx';
-  returnFile(req, res, filePath)
+app.get('/gpx/:file', function (req, res) {
+  var filePath = path.join(__dirname, 'gpx', req.params.file.replace(/\.gpx$/, '')) + '.gpx';
+  returnFile(req, res, filePath);
 });
 
-app.get("/kml/:file", function(req,res) {
-  var filePath = path.join(__dirname, 'kml', req.params.file.replace(/\.kml$/,"")) + '.kml';
-  returnFile(req, res, filePath)
+app.get('/kml/:file', function (req, res) {
+  var filePath = path.join(__dirname, 'kml', req.params.file.replace(/\.kml$/, '')) + '.kml';
+  returnFile(req, res, filePath);
+});
+
+app.get('/favicon.ico', (req, res) => {
+  var filePath = path.join(__dirname, 'views', 'favicon.ico');
+  returnFile(req, res, filePath);
 });
 
 var emulatorSocket = null;
@@ -180,13 +187,13 @@ if (logLevel >= LOG_INFO) { console.log('Attempting to connect to emulator at ' 
 var emulator = net.createConnection(telnetPort, telnetHost);
 
 emulator.on('error', function (e) {
-  console.log("Unable to connect to emulator at " + telnetHost + ':' + telnetPort);
+  console.log('Unable to connect to emulator at ' + telnetHost + ':' + telnetPort);
 });
-emulator.on('connection', function(socket) {
+emulator.on('connection', function (socket) {
   if (logLevel >= LOG_INFO) { console.log('connection to emulator established'); }
-  socket.on('data', function(c) {
+  socket.on('data', function (c) {
     var data = c + '';
-    switch(data) {
+    switch (data) {
       case 'OK': // ok we are in
         if (logLevel >= LOG_INFO) { console.log('connect to emulator'); }
         emulatorSocket = socket;
@@ -204,15 +211,15 @@ var server = http.createServer(app).listen(9090);
 var io = require('socket.io')(server);
 //io.set('log level', logLevel); // info
 var pts = {};
-function sendGeo(key)
-{
-  if (logLevel >= LOG_INFO) { console.log("sendGeo " + key) }
+
+function sendGeo (key) {
+  if (logLevel >= LOG_INFO) { console.log('sendGeo ' + key); }
   if (emulatorSocket == null) {
-    var cmd = "geofix " + telnetHost + ' ' + telnetPort + ' ' + key;
-    if (logLevel >= LOG_INFO) { console.log("exec: " + cmd); }
-    exec(cmd, function(error, stdout, stderr) {
+    var cmd = 'geofix ' + telnetHost + ' ' + telnetPort + ' ' + key;
+    if (logLevel >= LOG_INFO) { console.log('exec: ' + cmd); }
+    exec(cmd, function (error, stdout, stderr) {
       if (logLevel >= LOG_INFO) { console.log('stdout: ' + stdout); }
-      if (stderr != "") { console.log('stderr: ' + stderr); }
+      if (stderr !== '') { console.log('stderr: ' + stderr); }
       if (error != null) {
         console.log('Exec ' + cmd + ': ' + error);
       }
@@ -220,39 +227,53 @@ function sendGeo(key)
   }
   else {
     var msg = 'geo fix ' + key;
-    if (logLevel >= LOG_INFO) { console.log("write: " + msg); }
+    if (logLevel >= LOG_INFO) { console.log('write: ' + msg); }
     emulatorSocket.write(msg);
   }
 }
 
-io.sockets.on("connection", function(socket) {
-  var msg_to_client = {
-    data: "Connection to server established"
-  };
+io.sockets.on('connection', function (socket) {
+  var msg_to_client = { data: 'Connection to server established' };
   socket.send(JSON.stringify(msg_to_client));
   if (logLevel >= LOG_INFO) { console.log('socket.io Connection with client established'); }
 
-  socket.on("message",
-    function(json) {
-      data = JSON.parse(json);
-      if (data.lng && data.lat) {
-        var key = data.lng+' '+data.lat;
-        if (data.delete) {
-          delete pts[key];
+  socket.on('message',
+      function (json) {
+        data = JSON.parse(json);
+        if (data.lng && data.lat) {
+          var key = data.lng + ' ' + data.lat;
+          if (data.delete) {
+            delete pts[key];
+          }
+          else {
+            pts[key] = key;
+            sendGeo(key);
+          }
         }
         else {
-          pts[key] = key;
-          sendGeo(key);
+          if (data.replay) {
+          }
         }
+
+        var ack_to_client = {
+          data: 'Server Received point',
+        };
+        socket.send(JSON.stringify(ack_to_client));
+      });
+
+  socket.on('route', route => {
+    let name = route.name || 'mapData';
+    let filePath = path.join(__dirname, 'mapData', 'json', name + '.json');
+    console.log(`save route data to ${filePath}`);
+    let data = JSON.stringify(route.data, null, 2)
+    fs.writeFile(filePath, data,  (err) => {
+      if (!err) {
+        socket.send(`saved ${filePath}`);
       }
       else {
-        if (data.replay) {
-        }
+        socket.send(`not saved: ${err}`);
       }
-
-  var ack_to_client = {
-    data: "Server Received point"
-  };
-  socket.send(JSON.stringify(ack_to_client));
     });
+  });
 });
+

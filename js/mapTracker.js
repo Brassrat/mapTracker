@@ -1,5 +1,4 @@
 function startSocket () {
-  const socket = io.connect('/');
 
   /*Initializing the connection with the server via websockets */
   socket.on('message', function (message) {
@@ -15,6 +14,17 @@ function startSocket () {
     message = JSON.parse(message);
   });
   return socket;
+}
+
+function saveRoute() {
+  const data = { points, targets }
+  // send JSON string form of object to server
+  let fname = $EV('fname');
+  socket.emit('route', {name: fname, data});
+}
+
+function loadRoute() {
+
 }
 
 function sendLatLng (lat, lng, isTarget = false) {
@@ -71,7 +81,7 @@ function rmRow (tbl, anchor) {
             // have to update dist and totDist for all following points
             for (jj = ii; jj < locs.length; ++jj) {
               let tot = (jj <= 0) ? 0 : locs[jj-1].totDist;
-              locs[jj].dist = (jj <= 0) ? 0 : getDistance.betweenFeet(locs[jj-1], locs[jj]);
+              locs[jj].dist = (jj <= 0) ? 0 : getDistance.inFeet(locs[jj-1], locs[jj]);
               locs[jj].totDist = tot + locs[jj].dist;
               // have to update ui
 
@@ -106,13 +116,13 @@ var getDistance = (function () {
       return (d); // returns the distance in meter
     },
     betweenFeet: function (p1, p2) {
-      return (3.280839895 * this.between(p1, p2));
+      return 3.280839895 * this.between(p1, p2);
     },
     betweenMile: function (p1, p2) {
-      return (this.betweenFeet(p1, p2) / 5280);
+      return ((this.betweenFeet(p1, p2) * 100) / 5280).toFixed(2);
     },
     inMeters: function (p1, p2) {
-      return this.between(p1, p2).toFixed(4); // returns the distance in meter
+      return this.between(p1, p2).toFixed(3); // returns the distance in meter
     },
     inFeet: function (p1, p2) {
       return this.betweenFeet(p1, p2).toFixed(2);
@@ -168,6 +178,7 @@ function insertMarker (event) {
   const tableRef = document.getElementById(tbl).getElementsByTagName('tbody')[0];
   if (tableRef.rows.length <= 0) { startLocation = clickLocation; }
 
+  let name = '';
   let lat = clickLocation.lat();
   let lng = clickLocation.lng();
   let curLocation = { lat, lng };
@@ -176,19 +187,30 @@ function insertMarker (event) {
   if (locs.length > 0) {
     let prevPt = locs.length - 1;
     let prevLocation = locs[prevPt];
-    dist = Math.round(getDistance.betweenFeet(prevLocation, curLocation) * 100)/100;
+    dist = getDistance.betweenFeet(prevLocation, curLocation);
     totDist = locs[prevPt].totDist + dist;
   }
-  locs.push({ lat, lng, dist, totDist });
+  if (locs === targets) {
+    locs.push({ name, lat, lng,});
+  }
+  else {
+    locs.push({ lat, lng, dist, totDist });
+  }
 
   const newRow = tableRef.insertRow(tableRef.rows.length);
   // locs.length === tableRef.rows.length
   let ii = 0;
+  if (locs === targets) {
+    newRow.insertCell(ii++).appendChild(document.createTextNode(name));
+  }
   newRow.insertCell(ii++).appendChild(document.createTextNode(lat.toFixed(5)));
   newRow.insertCell(ii++).appendChild(document.createTextNode(lng.toFixed(6)));
   if (locs === points) {
-    addDistance(newRow, ii++, Math.round(dist * 100) / 100);
-    addDistance(newRow, ii++, Math.round((totDist * 100) / 5280) / 100);
+    let ff = (dist < 1000) ? 2 : 0;
+    addDistance(newRow, ii++, dist.toFixed(ff));
+    let dd = totDist / 5280;
+    ff = (dd < 100) ? 2 : 0;
+    addDistance(newRow, ii++, dd.toFixed(ff));
   }
   addDelete(tbl, newRow, ii++, clickLocation);
 

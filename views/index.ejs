@@ -9,7 +9,13 @@
       var socket = io();
       var mapLoadOptions = { lat: <%= lat %>, lng: <%= lng %>, zoom: <%= zoom %>};
     </script>
+    <script type="text/javascript" src="/js/dom.js"></script>
     <script type="text/javascript" src="/js/mapTracker.js"></script>
+    <script type="text/javascript">
+        window.onload = () => {
+          startSocket();
+        }
+    </script>
     <style>
         table {
             border: 1px solid black;
@@ -59,6 +65,10 @@
             overflow: auto;
             width: 100%
         }
+
+        button {
+            font-size: large;
+        }
     </style>
 </head>
 <body onkeydown="keyEventDn" onkeyup="keyEventUp">
@@ -68,6 +78,21 @@
             <div id="map" style="height:100%; width:100%;"></div>
         </td>
         <td>
+            <table>
+                <tr>
+                    <td class="center">
+                        <button onclick="saveRoute()">Save</button>
+                    </td>
+                    <td class="center">
+                        <button onclick="loadRoute()">Load</button>
+                    </td>
+                    <td>
+                        <label for="fname">Name of file</label>
+                        <input type="text" id="fname" name="fname">
+                    </td>
+                </tr>
+            </table>
+            <div>
             CENTER POINT
             <table id="centerTable">
                 <thead>
@@ -85,9 +110,10 @@
                 </tr>
                 </tbody>
             </table>
+            </div>
             &nbsp;
             <div style="<%= listStyle %>">
-                MARKED POINTS
+                MARKED POINTS (click to add)
                 <table id="latLngTable">
                     <thead>
                     <tr>
@@ -103,10 +129,11 @@
                 </table>
             </div>
             <div style="<%= listStyle %>">
-                TARGET POINTS
+                TARGET POINTS (shift-click to add)
                 <table id="targetTable">
                     <thead>
                     <tr>
+                        <th>NAME</th>
                         <th>LAT</th>
                         <th>LNG</th>
                         <th>DEL</th>
