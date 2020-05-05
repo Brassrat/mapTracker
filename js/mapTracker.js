@@ -11,7 +11,6 @@ function startSocket () {
        from the server
        */
     console.log('Message from the server arrived: ' + message);
-    message = JSON.parse(message);
   });
   return socket;
 }
@@ -28,14 +27,7 @@ function loadRoute() {
 }
 
 function sendLatLng (lat, lng, isTarget = false) {
-  // create a JS object
-  var data = {
-    lat: lat,
-    lng: lng,
-    target: isTarget
-  };
-  // send JSON string form of object to server
-  socket.send(JSON.stringify(data));
+  socket.emit('point', { lat: lat, lng: lng, target: isTarget });
   /* This triggers a message event on the server side
      and the event handler obtains the data sent */
 }
@@ -48,7 +40,7 @@ function addMarker (map, latLng, isTarget) {
     id: markerId,
     position: latLng,
     map: map,
-    title: latLng.toString(),
+    title: JSON.stringify(latLng),
     label: isTarget ? "T" : "P",
     icon: {
       url: `http://maps.google.com/mapfiles/ms/icons/${color}-dot.png`
@@ -212,9 +204,10 @@ function insertMarker (event) {
     ff = (dd < 100) ? 2 : 0;
     addDistance(newRow, ii++, dd.toFixed(ff));
   }
-  addDelete(tbl, newRow, ii++, clickLocation);
+  pt = {lat,lng};
+  addDelete(tbl, newRow, ii++, pt);
 
-  newRow.marker = addMarker(theMap, clickLocation, shiftdn);
+  newRow.marker = addMarker(theMap, pt, shiftdn);
 }
 
 function setDistance(row, col, vv) {
@@ -229,11 +222,11 @@ function addDistance (newRow, col, vv) {
   cell.appendChild(el_span);
 }
 
-function addDelete (tbl, newRow, col, clickLocation) {
+function addDelete (tbl, newRow, col, pt) {
   const anchor = document.createElement('a');
   anchor.href = '#';
   anchor.innerHTML = 'del'; // TODO - use image
-  anchor.title = 'delete ' + clickLocation.toString();
+  anchor.title = 'delete ' + JSON.stringify(pt);
   anchor.row = newRow;
   anchor.setAttribute('onclick', `return rmRow("${tbl}", this)`);
   const cell = newRow.insertCell(col);

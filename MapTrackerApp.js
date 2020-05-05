@@ -206,24 +206,34 @@ emulator.on('connection', function (socket) {
 });
 
 //var sys = require('sys');
-var exec = require('child_process').exec;
-var server = http.createServer(app).listen(9090);
-var io = require('socket.io')(server);
+const exec = require('child_process').exec;
+const server = http.createServer(app).listen(9090);
+const io = require('socket.io')(server);
 //io.set('log level', logLevel); // info
-var pts = {};
+const pts = {};
+let geofix = false;
+
+exec ('type -p geofix', (error, stdout, stderr) => {
+  if (!error) {
+    geofix = true;
+  }
+})
 
 function sendGeo (key) {
   if (logLevel >= LOG_INFO) { console.log('sendGeo ' + key); }
   if (emulatorSocket == null) {
-    var cmd = 'geofix ' + telnetHost + ' ' + telnetPort + ' ' + key;
-    if (logLevel >= LOG_INFO) { console.log('exec: ' + cmd); }
-    exec(cmd, function (error, stdout, stderr) {
-      if (logLevel >= LOG_INFO) { console.log('stdout: ' + stdout); }
-      if (stderr !== '') { console.log('stderr: ' + stderr); }
-      if (error != null) {
-        console.log('Exec ' + cmd + ': ' + error);
-      }
-    });
+    if (geofix) {
+      var cmd = 'geofix ' + telnetHost + ' ' + telnetPort + ' ' + key;
+      if (logLevel >= LOG_INFO) { console.log('exec: ' + cmd); }
+      exec(cmd, function (error, stdout, stderr) {
+        if (logLevel >= LOG_INFO) { console.log('stdout: ' + stdout); }
+        if (stderr !== '') { console.log('stderr: ' + stderr); }
+        if (error != null) {
+          console.log('Exec ' + cmd + ': ' + error.message);
+          console.log('stdout: ' + stdout);
+        }
+      });
+    }
   }
   else {
     var msg = 'geo fix ' + key;
@@ -233,33 +243,32 @@ function sendGeo (key) {
 }
 
 io.sockets.on('connection', function (socket) {
-  var msg_to_client = { data: 'Connection to server established' };
-  socket.send(JSON.stringify(msg_to_client));
+  socket.send('Connection to server established');
   if (logLevel >= LOG_INFO) { console.log('socket.io Connection with client established'); }
 
-  socket.on('message',
-      function (json) {
-        data = JSON.parse(json);
-        if (data.lng && data.lat) {
-          var key = data.lng + ' ' + data.lat;
-          if (data.delete) {
-            delete pts[key];
-          }
-          else {
-            pts[key] = key;
-            sendGeo(key);
-          }
-        }
-        else {
-          if (data.replay) {
-          }
-        }
+  socket.on('message', msg => {
+    console.log('received: ${msg}')
+  });
 
-        var ack_to_client = {
-          data: 'Server Received point',
-        };
-        socket.send(JSON.stringify(ack_to_client));
-      });
+  socket.on('point', data => {
+    console.log(`received point ${JSON.stringify(data)}`);
+    if (data.lng && data.lat) {
+      var key = data.lng + ' ' + data.lat;
+      if (data.delete) {
+        delete pts[key];
+      }
+      else {
+        pts[key] = key;
+        sendGeo(key);
+      }
+    }
+    else {
+      if (data.replay) {
+      }
+    }
+
+    socket.send('Server Received point');
+  });
 
   socket.on('route', route => {
     let name = route.name || 'mapData';
