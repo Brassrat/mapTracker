@@ -1,7 +1,9 @@
+let markerId = 0;
+
 function startSocket () {
 
   /*Initializing the connection with the server via websockets */
-  socket.on('message', function (message) {
+  nodeServer.fromServer('message', function (message) {
     /*
        When server sends data to the client it will trigger
        "message" event on the client side , by
@@ -12,22 +14,51 @@ function startSocket () {
        */
     console.log('Message from the server arrived: ' + message);
   });
-  return socket;
+
+  nodeServer.fromServer('saved', function(msg) {
+    if (typeof msg === 'string') {
+      alert(msg)
+    }
+    else if (msg.path) {
+      alert(`saved in ${msg.path}`)
+    }
+  });
+
+  nodeServer.fromServer('loaded', function(msg) {
+    if (typeof msg === 'string') {
+      alert(msg)
+    }
+    else {
+      let { name, path, kml = false, json = true, points, targets, center = {lat: null, lng: null}, zoom=12 } = msg;
+      //alert(`loaded in ${path}`)
+      if (center.lat === null) {
+        center.lat = points[0].lat;
+        center.lng = points[0].lng;
+      }
+      points.forEach(pt => {
+        insertMarker(pt.lat, pt.lng, false, false, false);
+      })
+      targets.forEach(pt => {
+        insertMarker(pt.lat, pt.lng, true, false, false);
+      })
+      setCenter(center);
+      setZoom(zoom);
+    }
+  });
 }
 
 function saveRoute() {
-  const data = { points, targets }
-  // send JSON string form of object to server
-  let fname = $EV('fname');
-  socket.emit('route', {name: fname, data});
+  const latLng = theMap.getCenter();
+  const zoom = theMap.getZoom();
+  nodeServer.toServer('save', {name : $EV('fname'), points, targets, zoom, center: {lat: latLng.lat(), lng: latLng.lng()}});
 }
 
 function loadRoute() {
-
+  nodeServer.toServer('load', {name: $EV('fname')});
 }
 
 function sendLatLng (lat, lng, isTarget = false) {
-  socket.emit('point', { lat: lat, lng: lng, target: isTarget });
+  nodeServer.toServer('point', { lat: lat, lng: lng, target: isTarget });
   /* This triggers a message event on the server side
      and the event handler obtains the data sent */
 }
@@ -52,6 +83,7 @@ function addMarker (map, latLng, isTarget) {
 
 function removeMarker (marker) {
   //alert("delete marker: " + marker.toString());
+  //nodeServer.toServer('point', { lat: lat, lng: lng, target: isTarget });
   marker.setMap(null);
   return null;
 }
@@ -128,9 +160,9 @@ var startLocation = null;
 
 let points = [];
 let targets = [];
-let ctrldn = false;
-let shiftdn = false;
-let altdn = false;
+var ctrldn = false;
+var shiftdn = false;
+var altdn = false;
 
 function keyEventDn(event) {
   switch(event.which) {
@@ -158,7 +190,12 @@ function keyEventUp(event) {
  * Add marker to map and Insert a row in the table at the last row
  * @param event
  */
-function insertMarker (event) {
+function insertEvent (markerData) {
+  let {location, shiftdn, ctrldn, altdn } = markerData;
+  insertMarker(location.lat(), location.lng(), shiftdn, ctrldn, altdn);
+}
+
+function insertMarker(lat, lng, shiftdn, ctrldn, altdn) {
   if (ctrldn || altdn) {
     return; // ignore ctrl clicks for now
   }
@@ -166,14 +203,11 @@ function insertMarker (event) {
   const tbl = shiftdn ? 'targetTable' : 'latLngTable';
   const locs = shiftdn ? targets : points;
 
-  const clickLocation = event.latLng;
   const tableRef = document.getElementById(tbl).getElementsByTagName('tbody')[0];
-  if (tableRef.rows.length <= 0) { startLocation = clickLocation; }
+  let curLocation = { lat, lng };
+  if (tableRef.rows.length <= 0) { startLocation = curLocation; }
 
   let name = '';
-  let lat = clickLocation.lat();
-  let lng = clickLocation.lng();
-  let curLocation = { lat, lng };
   let dist = 0;
   let totDist = 0;
   if (locs.length > 0) {
@@ -243,6 +277,15 @@ function showCenter () {
   document.getElementById('zoom').innerHTML = theMap.getZoom().toString();
 }
 
+function setZoom(zoom) {
+  theMap.setZoom(zoom);
+}
+
+function setCenter(center) {
+  theMap.setCenter(center);
+  showCenter();
+}
+
 function moveCenter (map, latLng) {
   map.setCenter(latLng);
   showCenter();
@@ -277,7 +320,7 @@ function loadTheMap (lat, lng, zoom) {
 
   google.maps.event.addListener(theMap, 'click', function (event) {
     // delay a little to handle 'slow' double click ...
-      updateTimeout = setTimeout(insertMarker, 400, event);
+      updateTimeout = setTimeout(insertEvent, 400, { location: event.latlng, shiftdn, ctrldn, altdn} );
     return false;
   });
 

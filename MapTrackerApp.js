@@ -118,7 +118,7 @@ function render (req, res, info) {
   let listStyle = 'width:' + ww + 'px;height:' + listHeight + 'px;overflow:auto;';
   if (logLevel >= LOG_DEBUG) { console.log('rendering...'); }
 
-  let keyPath=path.join(process.env['HOME'], '.ssh', 'ttt.json');
+  let keyPath = path.join(process.env['HOME'], '.ssh', 'map.json');
   let key = require(keyPath).key;
   res.render('index.ejs', { layout: false, key, lat, lng, zoom, mapWidth, mapHeight, listStyle });
 }
@@ -213,11 +213,11 @@ const io = require('socket.io')(server);
 const pts = {};
 let geofix = false;
 
-exec ('type -p geofix', (error, stdout, stderr) => {
+exec('type -p geofix', (error, stdout, stderr) => {
   if (!error) {
     geofix = true;
   }
-})
+});
 
 function sendGeo (key) {
   if (logLevel >= LOG_INFO) { console.log('sendGeo ' + key); }
@@ -243,14 +243,18 @@ function sendGeo (key) {
 }
 
 io.sockets.on('connection', function (socket) {
-  socket.send('Connection to server established');
+  const clientSocket = socket;
+  clientSocket.send('Connection to server established');
   if (logLevel >= LOG_INFO) { console.log('socket.io Connection with client established'); }
 
-  socket.on('message', msg => {
-    console.log('received: ${msg}')
+  clientSocket.on('close', () => {
+    console.log('socket closed');
+  })
+  clientSocket.on('message', msg => {
+    console.log('received: ${msg}');
   });
 
-  socket.on('point', data => {
+  clientSocket.on('point', data => {
     console.log(`received point ${JSON.stringify(data)}`);
     if (data.lng && data.lat) {
       var key = data.lng + ' ' + data.lat;
@@ -267,22 +271,79 @@ io.sockets.on('connection', function (socket) {
       }
     }
 
-    socket.send('Server Received point');
+    clientSocket.send('Server Received point');
   });
 
-  socket.on('route', route => {
+  function savePath (route) {
     let name = route.name || 'mapData';
-    let filePath = path.join(__dirname, 'mapData', 'json', name + '.json');
-    console.log(`save route data to ${filePath}`);
-    let data = JSON.stringify(route.data, null, 2)
-    fs.writeFile(filePath, data,  (err) => {
-      if (!err) {
-        socket.send(`saved ${filePath}`);
+    if (name.endsWith('.json')) {
+      return { json: true, kml: false, path: path.join(__dirname, 'mapData', 'json', name) };
+    }
+    else if (name.endsWith('.kml')) {
+      return { json: false, kml: true, path: path.join(__dirname, 'mapData', 'kml', name) };
+    }
+    else {
+      return { json: true, kml: false, path: path.join(__dirname, 'mapData', 'json', name + '.json') };
+    }
+  }
+
+  clientSocket.on('save', saveData => {
+    let { json, kml, path } = savePath(saveData);
+    console.log(`save route data to ${path}`);
+    try {
+      if (json) {
+        // TODO CONVERT TO GeoJSON...
+        let {name, points, targets, zoom, center}  = saveData;
+        let data = JSON.stringify({ name, zoom, center, points, target }, null, 2);
+        fs.writeFile(path, data, (err) => {
+          if (err) {
+            clientSocket.send('saved', `not saved: ${err}`);
+          }
+          else {
+            clientSocket.send('saved', { kml, json, path: path });
+          }
+        });
+      }
+      else if (kml) {
+        // some other format, e.g., kml
+      }
+    }
+    catch (e) {
+      clientSocket.emit('saved', `unable to save ${path} because ${e.toString()}`);
+    }
+  });
+
+  clientSocket.on('load', route => {
+    let { json, kml, path } = savePath(route);
+    try {
+      if (json) {
+        let data = require(path);
+        console.log(`load route data from ${path}`);
+        // should be GeoJSON...
+        // convert to simple JSON
+        let {name, zoom = 12, center = {lat: null, lng: null}, points, targets = []} = data;
+        if (center.lat === null) {
+          center.lat = points[0].lat;
+          center.lng = points[0].lng;
+        }
+        let msg = {path, json: true, kml: false, name, points, targets};
+        clientSocket.emit(`loaded`, msg);
       }
       else {
-        socket.send(`not saved: ${err}`);
+        console.log(`load route data from ${path}`);
+        fs.readFile(path, (err, data) => {
+          if (err) {
+            clientSocket.emit('loaded', `unable to load ${path}`);
+      }
+      else {
+            clientSocket.emit(`loaded`, {path, json: false, kml: true, data});
       }
     });
+      }
+    }
+    catch (e) {
+      clientSocket.emit('loaded', `unable to load ${path} because ${e.message}`);
+    }
   });
 });
 
